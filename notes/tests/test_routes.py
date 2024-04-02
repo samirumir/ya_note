@@ -19,7 +19,6 @@ class TestRoutes(TestCase):
     def setUpTestData(cls):
         cls.author = User.objects.create(username='Создатель')
         cls.reader = User.objects.create(username='Человек простой')
-        cls.auth_client = auth.get_user(Client())
 
         cls.notes = Note.objects.create(
             title='Заголовок',
@@ -32,7 +31,7 @@ class TestRoutes(TestCase):
           всем пользователям"""
         users_statuses = (
             (self.author, HTTPStatus.OK),
-            (self.auth_client, HTTPStatus.OK)
+            (self.client, HTTPStatus.OK)
             )
         for user, status in users_statuses:
             if user == self.author:
