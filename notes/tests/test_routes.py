@@ -37,7 +37,9 @@ class TestRoutes(TestCase):
             if user == self.author:
                 self.client.force_login(user)
             for name in (
-                'notes:home', 'users:login', 'users:logout',
+                'notes:home',
+                'users:login',
+                'users:logout',
                 ):
                 with self.subTest(user=user, name=name):
                     url = reverse(name)
@@ -54,7 +56,9 @@ class TestRoutes(TestCase):
         for user, status in users_statuses:
             self.client.force_login(user)
             for name in (
-                'notes:list', 'notes:success', 'notes:add',
+                'notes:list',
+                'notes:success',
+                'notes:add',
                 ):
                 with self.subTest(user=user, name=name):
                     url = reverse(name)
@@ -72,7 +76,9 @@ class TestRoutes(TestCase):
         for user, status in users_statuses:
             self.client.force_login(user)
             for name in (
-                'notes:edit', 'notes:delete', 'notes:detail',
+                'notes:edit',
+                'notes:delete',
+                'notes:detail',
                 ):
                 with self.subTest(user=user, name=name):
                     url = reverse(name, args=(self.notes.slug,))
@@ -84,7 +90,9 @@ class TestRoutes(TestCase):
         """Редирект неавторизованных пользователей на страницу регистрации"""
         login_url = reverse('users:login')
         for name in (
-            'notes:edit', 'notes:delete', 'notes:detail',
+            'notes:edit',
+            'notes:delete',
+            'notes:detail',
             ):
             with self.subTest(name=name):
                 url = reverse(name, args=(self.notes.slug,))
@@ -92,7 +100,9 @@ class TestRoutes(TestCase):
                 response = self.client.get(url)
                 self.assertRedirects(response, redirect_url)
         for name in (
-            'notes:add', 'notes:success', 'notes:list',
+            'notes:add',
+            'notes:success',
+            'notes:list',
             ):
             with self.subTest(name=name):
                 url = reverse(name)

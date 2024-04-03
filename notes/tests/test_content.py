@@ -1,13 +1,12 @@
 from django.conf import settings
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from django.utils import timezone
-
-from datetime import datetime, timedelta
 
 from notes.models import Note
 from notes.forms import NoteForm
+
+from unittest import skip
 
 User = get_user_model()
 
@@ -16,53 +15,63 @@ User = get_user_model()
 2.в список заметок одного пользователя не попадают заметки другого пользователя;
 3.на страницы создания и редактирования заметки передаются формы."""
 
-class TestDetailPage(TestCase):
+class TestAddPage(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.news = News.objects.create(
-            title='Тестовая новость', text='Просто текст.'
-        )
-        # Сохраняем в переменную адрес страницы с новостью:
-        cls.detail_url = reverse('news:detail', args=(cls.news.id,))
-        cls.author = User.objects.create(username='Комментатор')
-        # Запоминаем текущее время:
-        now = timezone.now()
-        # Создаём комментарии в цикле.
-        for index in range(10):
-            # Создаём объект и записываем его в переменную.
-            comment = Comment.objects.create(
-                news=cls.news, author=cls.author, text=f'Tекст {index}',
-            )
-            # Сразу после создания меняем время создания комментария.
-            comment.created = now + timedelta(days=index)
-            # И сохраняем эти изменения.
-            comment.save()
+        cls.author = User.objects.create(username='Человек простой')
+        cls.add_url = reverse('notes:add',)
+        cls.notes = Note.objects.create(
+            title='Простой страницы',
+            text='Простой текст страницы',
+            slug='First',
+            author=cls.author,)
+        cls.edit_url = reverse('notes:edit', args=(cls.notes.slug,))
 
-    def test_comments_order(self):
-        response = self.client.get(self.detail_url)
-        # Проверяем, что объект новости находится в словаре контекста
-        # под ожидаемым именем - названием модели.
-        self.assertIn('news', response.context)
-        # Получаем объект новости.
-        news = response.context['news']
-        # Получаем все комментарии к новости.
-        all_comments = news.comment_set.all()
-        # Собираем временные метки всех новостей.
-        all_timestamps = [comment.created for comment in all_comments]
-        # Сортируем временные метки, менять порядок сортировки не надо.
-        sorted_timestamps = sorted(all_timestamps)
-        # Проверяем, что id первого комментария меньше id второго.
-        self.assertEqual(all_timestamps, sorted_timestamps)
-
+    # @skip('bla bla bla')
     def test_anonymous_client_has_no_form(self):
-        response = self.client.get(self.detail_url)
+        response = self.client.get(self.add_url)
         self.assertNotIn('form', response.context)
 
-    def test_authorized_client_has_form(self):
-        # Авторизуем клиент при помощи ранее созданного пользователя.
+    # @skip('bla bla bla')
+    def test_authorized_client_has_add_form(self):
         self.client.force_login(self.author)
-        response = self.client.get(self.detail_url)
+        response = self.client.get(self.add_url)
         self.assertIn('form', response.context)
-        # Проверим, что объект формы соответствует нужному классу формы.
-        self.assertIsInstance(response.context['form'], CommentForm)
+        self.assertIsInstance(response.context['form'], NoteForm)
+
+    def test_authorized_client_has_edit_form(self):
+        self.client.force_login(self.author)
+        response = self.client.get(self.edit_url)
+        self.assertIn('form', response.context)
+        self.assertIsInstance(response.context['form'], NoteForm)
+
+
+class TestHomePage(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.author = User.objects.create(username='Человек простой')
+        cls.reader = User.objects.create(username='Читатель левый')
+        cls.notes_author = Note.objects.create(
+            title='Простой страницы',
+            text='Простой текст страницы',
+            slug='First',
+            author=cls.author,)
+        cls.notes_reader = Note.objects.create(
+            title='Простой страницы',
+            text='Простой текст страницы',
+            slug='Second',
+            author=cls.reader,)
+        cls.notes_url = reverse('notes:list')
+
+    def test_note_in_context(self):
+        """Словарь передается в context, 
+        на страницу пользователя не попадают записи другого пользователя"""
+        self.client.force_login(self.author)
+        response = self.client.get(self.notes_url)
+        object_list = response.context['object_list']
+        notes_count = object_list.count()
+        self.assertEqual(notes_count, 1)
+
+    
